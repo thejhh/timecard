@@ -10,6 +10,8 @@ var TIMECARD = {};
 	var our = {};
 	our.projects = [];
 	
+	our.log = [];
+	
 	/* Create project */
 	function Project(args) {
 		args = args || {};
@@ -32,12 +34,14 @@ var TIMECARD = {};
 	}
 	
 	/* Write log */
-	TIMECARD.write_log = function(msg) {
-		var now = new Date(),
+	TIMECARD.write_log = function(msg, date) {
+		var now = date || new Date(),
 		    log_div = document.getElementById('log_div'),
 		    p = document.createElement("p");
 		p.innerHTML = format_time(now) + ' - ' + msg;
 		log_div.appendChild(p);
+		our.log.push({'date':now, 'msg':msg});
+		TIMECARD.save();
 	};
 	
 	/* Add new project */
@@ -81,6 +85,86 @@ var TIMECARD = {};
 			TIMECARD.write_log('Stopped project: ' + c.project.name);
 		}
 	};
+	
+	/* Setup status line */
+	TIMECARD.status = function(msg) {
+		document.getElementById('status_div').innerHTML = ''+msg;
+	};
+	
+	/* Load data from server */
+	TIMECARD.load = function() {
+		var i, item, items, d, log_div = document.getElementById('log_div'), log_items = [], matches;
+		TIMECARD.status('Loading...');
+		if(our.io_socket) {
+			our.io_socket.emit('load', function(err, data) {
+				if(err) {
+					TIMECARD.status('Loading... failed!');
+				} else {
+					try {
+						items = data.log || [];
+						for(i=0; i<items.length; ++i) {
+							item = items[i];
+							
+							function d(n) {
+								return parseInt((''+n).replace(/^0+/, '').replace(/^$/, '0'), 10);
+							}
+							//alert(item.date);
+							matches = (''+item.date).match(/^([0-9]{4})\-([0-9]{2})\-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\.([0-9]+)Z$/);
+							if(matches) {
+								item.date = new Date( d(matches[1]), d(matches[2])-1, d(matches[3]), d(matches[4]), d(matches[5]), d(matches[6]), d(matches[7]) );
+							}
+							
+							if(!(item.date instanceof Date)) {
+								throw TypeError("Failed to parse date: " + item.date);
+							}
+							
+							p = document.createElement("p");
+							p.innerHTML = format_time(item.date) + ' - ' + item.msg;
+							log_div.appendChild(p);
+							log_items.push({'date':item.date, 'msg':item.msg});
+						}
+						
+						our.log = log_items;
+						TIMECARD.status('Loaded.');
+					} catch(e) {
+						TIMECARD.status('Loading... failed! ('+e+')');
+					}
+				}
+			});
+		} else {
+			TIMECARD.status('Loading... failed! No IO-service!');
+		}
+	};
+	
+	/* Save data to server */
+	TIMECARD.save = function() {
+		var buf;
+		TIMECARD.status('Saving...');
+		if(our.io_socket) {
+			buf = {'log':our.log};
+			our.io_socket.emit('save', buf, function(err) {
+				if(err) {
+					TIMECARD.status('Saving... failed!');
+				} else {
+					TIMECARD.status('Saved.');
+				}
+			});
+		} else {
+			TIMECARD.status('Saving... failed! No IO-service!');
+		}
+	};
+	
+	/* Initialize everything */
+	function init_window() {
+		
+		// Setup IO service
+		our.io_socket = io.connect();
+		
+		// Load data from server
+		TIMECARD.load();
+	}
+	
+	window.onload = init_window;
 	
 })();
 

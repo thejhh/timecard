@@ -4,9 +4,14 @@
 <body>
  <title>Timecard Demo</title>
  <link href="demo.css" rel="stylesheet" type="text/css" media="all" />
+ <script src="/socket.io/socket.io.js"></script>
  <script type="text/javascript" src="demo.js"></script>
 </head>
 <body>
+
+<div id="status_div">Initializing...</div>
+
+<hr />
 
 <div id="add_project_div">
  <form onsubmit="TIMECARD.add_project(this);return false">
