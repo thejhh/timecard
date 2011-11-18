@@ -7,6 +7,27 @@
  <script type="text/javascript" src="demo.js"></script>
 </head>
 <body>
+
+<div id="add_project_div">
+ <form onsubmit="TIMECARD.add_project(this);return false">
+ Add New Project: <input type="text" name="name" value="" /> <input type="submit" name="add_project" value="submit" />
+ </form>
+</div>
+
+<h3>Projects</h3>
+
+<div id="projects_div">
+</div>
+
+<div id="tools_div">
+<input id="stop_button" type="button" value="Stop" disabled="disabled" onclick="TIMECARD.stop();return false" />
+</div>
+
+<h3>Log</h3>
+
+<div id="log_div">
+</div>
+
 </body>
 </html>
 
