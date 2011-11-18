@@ -18,9 +18,9 @@ var TIMECARD = {};
 		m.name = args.name || '';
 		
 		// Add button
-		m.element = document.createElement("input");
-		m.element.type = 'button';
-		m.element.value = m.name;
+		
+		m.element = document.createElement("button");
+		m.element.appendChild( document.createTextNode(m.name) );
 		m.element.onclick = function() { TIMECARD.start(m); };
 		projects_div.appendChild(m.element);
 	}
@@ -65,6 +65,7 @@ var TIMECARD = {};
 		if(!our.countdown) {
 			our.countdown = { 'started':new Date(), 'project':project };
 			document.getElementById('stop_button').disabled = false;
+			project.element.disabled = true;
 			TIMECARD.write_log('Started project: ' + project.name);
 		}
 	};
@@ -75,8 +76,9 @@ var TIMECARD = {};
 		if(our.countdown) {
 			c = our.countdown;
 			delete our.countdown;
-			TIMECARD.write_log('Stopped project: ' + c.project.name);
 			document.getElementById('stop_button').disabled = true;
+			c.project.element.disabled = false;
+			TIMECARD.write_log('Stopped project: ' + c.project.name);
 		}
 	};
 	
