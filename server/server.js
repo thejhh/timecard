@@ -11,7 +11,7 @@ var app = require('http').createServer(function (req, res) {
 	
 	function serve_file(file, type, content_file) {
 		if(req.url == '/' + file) {
-			content_file = content_file || ''+file;
+			content_file = 'client/' + (content_file || file);
 			require('fs').readFile(content_file, function(err, data) {
 				res.writeHead(200, {'Content-Type': ''+type});
 				res.end(data);
@@ -21,10 +21,10 @@ var app = require('http').createServer(function (req, res) {
 	}
 	
 	//if(serve_file('socket.io/socket.io.js', 'text/javascript', 'node_modules/socket.io/node_modules/socket.io-client/dist/socket.io.min.js')) return;
-	if(serve_file('demo.html', 'text/html')) return;
-	if(serve_file('demo.css', 'text/css')) return;
-	if(serve_file('demo.js', 'text/javascript')) return;
-	if(serve_file('', 'text/html', 'demo.html')) return;
+	if(serve_file('client.html', 'text/html')) return;
+	if(serve_file('client.css', 'text/css')) return;
+	if(serve_file('client.js', 'text/javascript')) return;
+	if(serve_file('', 'text/html', 'client.html')) return;
 	
 	res.writeHead(404, {'Content-Type': 'text/plain'});
 	res.end('URL not found: ' + req.url);
@@ -51,6 +51,7 @@ io.sockets.on('connection', function (socket) {
 	var data_file = 'db/data.json';
 	
 	/* Save data */
+	/*
 	socket.on('save', function(data, callback) {
 		var buf;
 		//console.log('Saving data...');
@@ -69,8 +70,10 @@ io.sockets.on('connection', function (socket) {
 			callback && callback('Failed to stringify');
 		}
 	});
+	*/
 	
 	/* Load data */
+	/*
 	socket.on('load', function(callback) {
 		//console.log('Loading data...');
 		require('fs').readFile(data_file, 'utf8', function(err, data) {
@@ -89,7 +92,7 @@ io.sockets.on('connection', function (socket) {
 			}
 		});
 	});
-	
+	*/
 });
 //console.log('IO service running at port 3001');
 
