@@ -26,7 +26,7 @@ io.configure('production', function(){
 });
 
 /* Connection IO Event */
-io.sockets.on('connection', function (socket) {
+io.sockets.on('connection', function(socket) {
 	
 	/* Initialize client */
 	socket.on('client:init', function(fn) {
@@ -74,7 +74,9 @@ io.sockets.on('connection', function (socket) {
 			return;
 		}
 		p = new data.Project({'name':name});
+		// FIXME: Move this code as _loaded.data.addProject() or similar
 		_loaded.data.projects.push(p);
+		_loaded.data.changed(true);
 		io.sockets.emit('project:add', {'id':p.id,'name':p.name});
 		fn();
 	});

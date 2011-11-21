@@ -10,4 +10,27 @@ var app = require('./app.js'),
 app.listen(3000);
 console.log('Server running at port 3000');
 
+process.stdin.resume();
+process.stdin.destroySoon();
+
+process.once('SIGINT', function() {
+	console.log('Closing server...');
+	app.close();
+});
+
+process.once('SIGTERM', function() {
+	console.log('Closing server...');
+	app.close();
+});
+
+process.once('SIGHUP', function() {
+	console.log('Closing server...');
+	app.close();
+});
+
+process.once('SIGKILL', function() {
+	console.log('Closing server...');
+	app.close();
+});
+
 /* EOF */
