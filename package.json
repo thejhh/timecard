@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "socket.io": "*",
-    "json-object": "*"
+    "json-object": "*",
+    "snippets": "*"
   },
   "devDependencies": {}
 }

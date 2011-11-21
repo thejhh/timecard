@@ -9,17 +9,22 @@
 </head>
 <body>
 
-<div id="status_div">Initializing...</div>
+<div>
+	<b>Status:</b> 
+	<span id="status_div">Initializing...</div>
+</div>
 
 <hr />
 
 <div id="add_project_div">
- <form onsubmit="TIMECARD.add_project(this);return false">
- Add New Project: <input type="text" name="name" value="" /> <input type="submit" name="add_project" value="submit" />
+ <form onsubmit="TIMECARD.addProject(this);return false">
+ <b>Add New Project:</b> <input type="text" name="name" value="" /> <input type="submit" name="add_project" value="submit" />
  </form>
 </div>
 
-<h3>Projects</h3>
+<hr />
+
+<h3>Start Projects</h3>
 
 <div id="projects_div">
 </div>
@@ -28,7 +33,9 @@
 <button id="stop_button" type="button" disabled="disabled" onclick="TIMECARD.stop();return false">Stop</button>
 </div>
 
-<h3>Log</h3>
+<hr />
+
+<h3>Log Messages</h3>
 
 <div id="log_div">
 </div>
