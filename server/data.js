@@ -6,6 +6,7 @@
 var json = require('json-object').setup(global),
     foreach = require('snippets').foreach,
     initfn = require('./fn.js').init,
+    EventEmitter = require('events').EventEmitter,
     next_id = 1;
 
 /* To int */
@@ -30,7 +31,7 @@ function to_date(d) {
 function Project(args) {
 	args = args || {};
 	if(args.id) {
-		this.id = parseInt(''+args.id, 10);
+		this.id = to_int(args.id);
 	} else {
 		this.id = next_id;
 		next_id += 1;
@@ -38,10 +39,20 @@ function Project(args) {
 	this.name = ''+args.name;
 }
 
+/* Create pair of time */
+function TimePair(args) {
+	args = args || {};
+	this.started = to_date(args.started);
+	this.stopped = to_date(args.stopped);
+	this.project = args.project;
+}
+
 /* Load file */
 function load_file(data_filename, load_fn) {
 	load_fn = initfn(load_fn);
-	var obj = {'projects':[], 'log':[]};
+	var obj = new EventEmitter();
+	obj.projects = [];
+	obj.times = [];
 	require('fs').readFile(data_filename, 'utf8', function(err, data) {
 		var buf, _changed_data = false;
 		
@@ -70,10 +81,6 @@ function load_file(data_filename, load_fn) {
 			obj.projects.push( new Project({'id':to_int(d.id),'name':''+d.name}) );
 		});
 		
-		// Prepare log messages
-		foreach(buf.log).each(function(o) {
-		});
-		
 		// Prepare methods
 		
 		// Get project by ID
@@ -98,6 +105,13 @@ function load_file(data_filename, load_fn) {
 			obj.countdown = {'started':to_date(buf.countdown.started), 'project':get_project_by_id(to_int(buf.countdown.project.id)) };
 		}
 		
+		// Prepare times
+		if(buf.times) {
+			foreach(buf.times).each(function(t) {
+				obj.times.push( new TimePair({'started':t.started, 'stopped':t.stopped, 'project':get_project_by_id(t.project.id) }) );
+			});
+		}
+		
 		// Returns true if countdown is started
 		obj.started = function(fn) {
 			fn = initfn(fn);
@@ -108,6 +122,7 @@ function load_file(data_filename, load_fn) {
 		obj.changed = function(new_value) {
 			if(new_value !== undefined) {
 				_changed_data = new_value;
+				if(new_value) obj.emit('changed');
 			}
 			return _changed_data;
 		};
@@ -118,11 +133,17 @@ function load_file(data_filename, load_fn) {
 			if(project && (project instanceof Project)) {
 				obj.countdown = { 'started':new Date(), 'project':project };
 				obj.changed(true);
+				obj.emit('start', obj.countdown);
 				fn();
 			} else {
 				fn("invalid argument");
 			}
 		};
+		
+		// Handle stop events
+		obj.on('stop', function(buf) {
+			obj.times.push( new TimePair({'started':buf.started, 'stopped':buf.stopped, 'project':buf.project}) );
+		});
 		
 		// Stop countdown
 		obj.stop = function(fn) {
@@ -133,6 +154,7 @@ function load_file(data_filename, load_fn) {
 				delete obj.countdown;
 				obj.changed(true);
 				buf.stopped = new Date();
+				obj.emit('stop', buf);
 				fn(undefined, buf);
 			} else {
 				fn("nothing to stop");
@@ -141,7 +163,7 @@ function load_file(data_filename, load_fn) {
 		
 		// Get data as serialized object
 		obj.getSerializedObject = function() {
-			var buf = {'projects':[]}, source;
+			var buf = {'projects':[], 'times':[]}, source;
 			
 			// next_id
 			buf.next_id = to_int(next_id);
@@ -153,8 +175,22 @@ function load_file(data_filename, load_fn) {
 			
 			// countdown
 			if(obj.countdown) {
-				buf.countdown = {'started':to_int(obj.countdown.started.getTime()), 'project':{'id':to_int(obj.countdown.project.id),'name':''+obj.countdown.project.name}};
+				buf.countdown = {
+					'started':to_int(obj.countdown.started.getTime()),
+					'project':{
+						'id':to_int(obj.countdown.project.id),
+						'name':''+obj.countdown.project.name}};
 			}
+			
+			// Times
+			foreach(obj.times).each(function(o) {
+				buf.times.push( {
+					'started':to_int(o.started.getTime()), 
+					'stopped':to_int(o.stopped.getTime()),
+					'project':{
+						'id':to_int(o.project.id),
+						'name':''+o.project.name }} );
+			});
 			
 			return buf;
 		};
@@ -163,7 +199,7 @@ function load_file(data_filename, load_fn) {
 		obj.getSerializedString = function() {
 			var source, buf=obj.getSerializedObject();
 			try {
-				source = JSON.stringify(buf);
+				source = JSON.stringify(buf, null, 2) + '\n';
 			} catch(e) {
 				return;
 			}

@@ -7,6 +7,7 @@ var app = require('./app.js'),
     foreach = require('snippets').foreach,
     io = module.exports = require('socket.io').listen(app),
     data = require('./data.js'),
+    http_post_mod = require('./http_post.js'),
     initfn = require('./fn.js').init,
     _loaded = {};
 
@@ -61,6 +62,10 @@ io.sockets.on('connection', function(socket) {
 			}
 			
 			_loaded.data = d;
+			
+			// Load modules
+			//http_post_mod.init(d);
+			
 			fn(undefined, prepare_reply(_loaded.data) );
 		});
 	});
@@ -168,49 +173,6 @@ io.sockets.on('connection', function(socket) {
 	});
 	
 	
-	/* Save data */
-	/*
-	socket.on('save', function(data, callback) {
-		var buf;
-		//console.log('Saving data...');
-		try {
-			buf = json.stringify(data);
-			require('fs').writeFile(data_file, buf, 'utf8', function(err) {
-				if(err) {
-					console.log('Failed to save: ' + data_file + ' (' + err + ')');
-					callback && callback('Failed to save');
-				} else {
-					console.log('Saved succesfully to: ' + data_file);
-					callback && callback(undefined);
-				}
-			});
-		} catch(e) {
-			callback && callback('Failed to stringify');
-		}
-	});
-	*/
-	
-	/* Load data */
-	/*
-	socket.on('load', function(callback) {
-		//console.log('Loading data...');
-		require('fs').readFile(data_file, 'utf8', function(err, data) {
-			var buf;
-			if(err) {
-				console.log('Failed to load: ' + data_file + ' (' + err + ')');
-				callback && callback('Failed to load');
-			} else {
-				try {
-					buf = json.parse(data);
-					console.log('Loaded succesfully from: ' + data_file);
-					callback && callback(undefined, buf);
-				} catch(e) {
-					callback && callback('Failed to parse data');
-				}
-			}
-		});
-	});
-	*/
 });
 
 /* EOF */
