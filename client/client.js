@@ -4,8 +4,31 @@ var TIMECARD = {};
 /* Our local namespace scope */
 (function() {
 	
+	var elements = {'TimePair': {}, 'Project': {}};
+	
 	var timecard = TIMECARD;
-	timecard.data = {'projects': [], 'log':[]};
+	timecard.data = {'projects': [], 'log':[], 'times':[]};
+	
+	var utils = {};
+	
+	/* To int */
+	utils.to_int = function(n) {
+		if(typeof n === 'number') {
+			return n;
+		}
+		return parseInt(n, 10);
+	};
+	
+	/* To date */
+	utils.to_date = function(d) {
+		if(d && (d instanceof Date)) {
+			return d;
+		}
+		var ret = new Date();
+		ret.setTime(utils.to_int(d));
+		return ret;
+	};
+
 	
 	/* Prepare callback */
 	function initfn(fn) {
@@ -107,6 +130,40 @@ var TIMECARD = {};
 		return e;
 	}
 	
+	/* */
+	function create_times_element(timepair) {
+		function f(n) { return (n <= 9) ? '0'+n : ''+n; }
+		function get_date(d) {
+			return f(d.getDate()) + '.' + f(d.getMonth()+1) + '.' + f(d.getFullYear());
+		}
+		function get_hour(d) {
+			return f(d.getHours()) + ':' + f(d.getMinutes());
+		}
+		function get_time(hours) {
+			var h = Math.floor(hours),
+			    m = Math.round((hours-h)*60);
+			return f(h) + ':' + f(m);
+		}
+		var parent_div = document.getElementById('times_div'),
+		    parent_table = parent_div.firstChild,
+		    tr = parent_table.insertRow(-1),
+			date, start, end, project, time;
+		
+		date = tr.insertCell(-1);
+		start = tr.insertCell(-1);
+		end = tr.insertCell(-1);
+		project = tr.insertCell(-1);
+		time = tr.insertCell(-1);
+		
+		date.appendChild( document.createTextNode(get_date(timepair.started)) );
+		start.appendChild( document.createTextNode(get_hour(timepair.started)) );
+		end.appendChild( document.createTextNode(get_hour(timepair.stopped)) );
+		project.appendChild( document.createTextNode(''+timepair.project.name) );
+		time.appendChild( document.createTextNode(''+get_time(timepair.getHours())) );
+		
+		return tr;
+	}
+	
 	/* Create Project Object */
 	function Project(args) {
 		args = args || {};
@@ -117,6 +174,39 @@ var TIMECARD = {};
 		m.button = create_button(m.name, function() { timecard.start(m); });
 		div.appendChild(m.button);
 	}
+	
+	/* Create timepair Object */
+	function TimePair(args) {
+		args = args || {};
+		var self = this;
+		self.id = utils.to_int(args.id);
+		self.started = utils.to_date(args.started);
+		self.stopped = utils.to_date(args.stopped);
+		if(args.project && (args.project instanceof Project) ) {
+			self.project = args.project;
+		}
+		if(!self.project) {
+			write_log("Warning! TimePair created without project!");
+		}
+		
+		if(elements.TimePair[self.id] === undefined) {
+			// Create new element
+			self.element = create_times_element(self);
+			elements.TimePair[self.id] = self.element;
+		} else {
+			self.element = elements.TimePair[self.id];
+		}
+		
+		// Update element data?
+	}
+	
+	/* */
+	TimePair.prototype.getHours = function() {
+		var self = this,
+			started = self.started.getTime(),
+			stopped = self.stopped.getTime();
+		return (stopped - started)/1000/3600;
+	};
 	
 	/* Format time */
 	function format_time(d) {
@@ -219,6 +309,17 @@ var TIMECARD = {};
 				project.button.disabled = true;
 			} else {
 				disable_stop_button(true);
+			}
+			
+			if(data.times && (data.times.length != 0)) {
+				table = data.times;
+				for(i=0; i<table.length; i+=1) {
+					timecard.data.times.push( new TimePair({
+						'id':table[i].id,
+						'started':table[i].started,
+						'stopped':table[i].stopped,
+						'project':get_project_by_id(table[i].project.id)} ));
+				}
 			}
 			
 			set_status('Load successful.');

@@ -2,3 +2,8 @@
 .error {
 	color: red;
 }
+
+#times_div td, th {
+	text-align: right;
+	width: 150px;
+}

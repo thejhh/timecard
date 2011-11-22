@@ -9,6 +9,7 @@ var app = require('./app.js'),
     data = require('./data.js'),
     http_post_mod = require('./http_post.js'),
     initfn = require('./fn.js').init,
+    utils = require('./utils.js'),
     _loaded = {};
 
 
@@ -34,17 +35,24 @@ io.sockets.on('connection', function(socket) {
 		fn = initfn(fn);
 		
 		function prepare_reply(d) {
-			var reply = {'projects':[]};
+			var reply = {'projects':[],'times':[]};
 			foreach(d.projects).each(function(o) {
 				reply.projects.push({'id':o.id,'name':o.name});
 			});
 			if(d.countdown) {
 				reply.countdown = {
-					'started':d.countdown.started,
+					'started':d.countdown.started.getTime(),
 					'project':{
 						'id':d.countdown.project.id,
 						'name':d.countdown.project.name }};
 			}
+			foreach(d.times).each(function(o) {
+				reply.times.push({
+					'id':o.id,
+					'started': o.started.getTime(),
+					'stopped': o.stopped.getTime(),
+					'project': {'id':o.project.id,'name':o.project.name} });
+			});
 			return reply;
 		}
 		

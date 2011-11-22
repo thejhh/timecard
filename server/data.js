@@ -6,32 +6,15 @@
 var json = require('json-object').setup(global),
     foreach = require('snippets').foreach,
     initfn = require('./fn.js').init,
+    utils = require('./utils.js'),
     EventEmitter = require('events').EventEmitter,
     next_id = 1;
-
-/* To int */
-function to_int(n) {
-	if(typeof n === 'number') {
-		return n;
-	}
-	return parseInt(n, 10);
-}
-
-/* To date */
-function to_date(d) {
-	if(d && (d instanceof Date)) {
-		return d;
-	}
-	var ret = new Date();
-	ret.setTime(to_int(d));
-	return ret;
-}
 
 /* Create Project object */
 function Project(args) {
 	args = args || {};
 	if(args.id) {
-		this.id = to_int(args.id);
+		this.id = utils.to_int(args.id);
 	} else {
 		this.id = next_id;
 		next_id += 1;
@@ -42,9 +25,20 @@ function Project(args) {
 /* Create pair of time */
 function TimePair(args) {
 	args = args || {};
-	this.started = to_date(args.started);
-	this.stopped = to_date(args.stopped);
-	this.project = args.project;
+	if(args.id) {
+		this.id = utils.to_int(args.id);
+	} else {
+		this.id = next_id;
+		next_id += 1;
+	}
+	this.started = utils.to_date(args.started);
+	this.stopped = utils.to_date(args.stopped);
+	if(args.project && (args.project instanceof Project) ) {
+		this.project = args.project;
+	}
+	if(!this.project) {
+		console.log("Warning! TimePair created without project!");
+	}
 }
 
 /* Load file */
@@ -73,12 +67,12 @@ function load_file(data_filename, load_fn) {
 		
 		// Prepare next ID
 		if(buf.next_id) {
-			next_id = to_int(buf.next_id);
+			next_id = utils.to_int(buf.next_id);
 		}
 		
 		// Prepare projects
 		foreach(buf.projects).each(function(d) {
-			obj.projects.push( new Project({'id':to_int(d.id),'name':''+d.name}) );
+			obj.projects.push( new Project({'id':utils.to_int(d.id),'name':''+d.name}) );
 		});
 		
 		// Prepare methods
@@ -102,13 +96,13 @@ function load_file(data_filename, load_fn) {
 		
 		// Prepare countdown
 		if(buf.countdown) {
-			obj.countdown = {'started':to_date(buf.countdown.started), 'project':get_project_by_id(to_int(buf.countdown.project.id)) };
+			obj.countdown = {'started':utils.to_date(buf.countdown.started), 'project':get_project_by_id(utils.to_int(buf.countdown.project.id)) };
 		}
 		
 		// Prepare times
 		if(buf.times) {
 			foreach(buf.times).each(function(t) {
-				obj.times.push( new TimePair({'started':t.started, 'stopped':t.stopped, 'project':get_project_by_id(t.project.id) }) );
+				obj.times.push( new TimePair({'id':t.id,'started':t.started, 'stopped':t.stopped, 'project':get_project_by_id(t.project.id) }) );
 			});
 		}
 		
@@ -166,29 +160,30 @@ function load_file(data_filename, load_fn) {
 			var buf = {'projects':[], 'times':[]}, source;
 			
 			// next_id
-			buf.next_id = to_int(next_id);
+			buf.next_id = utils.to_int(next_id);
 			
 			// projects
 			foreach(obj.projects).each(function(o) {
-				buf.projects.push({'id':to_int(o.id), 'name':''+o.name});
+				buf.projects.push({'id':utils.to_int(o.id), 'name':''+o.name});
 			});
 			
 			// countdown
 			if(obj.countdown) {
 				buf.countdown = {
-					'started':to_int(obj.countdown.started.getTime()),
+					'started':utils.to_int(obj.countdown.started.getTime()),
 					'project':{
-						'id':to_int(obj.countdown.project.id),
+						'id':utils.to_int(obj.countdown.project.id),
 						'name':''+obj.countdown.project.name}};
 			}
 			
 			// Times
 			foreach(obj.times).each(function(o) {
 				buf.times.push( {
-					'started':to_int(o.started.getTime()), 
-					'stopped':to_int(o.stopped.getTime()),
+					'id':utils.to_int(o.id),
+					'started':utils.to_int(o.started.getTime()), 
+					'stopped':utils.to_int(o.stopped.getTime()),
 					'project':{
-						'id':to_int(o.project.id),
+						'id':utils.to_int(o.project.id),
 						'name':''+o.project.name }} );
 			});
 			
