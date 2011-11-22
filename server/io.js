@@ -10,21 +10,43 @@ var app = require('./app.js'),
     http_post_mod = require('./http_post.js'),
     initfn = require('./fn.js').init,
     utils = require('./utils.js'),
+    config = require('./config.js'),
     _loaded = {};
 
 
 /* Configure Socket.IO */
 // See https://github.com/LearnBoost/Socket.IO/wiki/Configuring-Socket.IO
 io.configure('development', function(){
-	io.set('log level', 1);
+	//io.set('log level', 1);
 	//io.set('transports', ['websocket', 'htmlfile', 'xhr-polling']);
 	//io.set('transports', ['xhr-polling']);
+	
+	io.set('log level', 1);
+	//io.set('transports', ['xhr-polling']);
+	//io.set('transports', ['websocket', 'htmlfile', 'xhr-polling']);
+	if(config.io) {
+		if(config.io.log_level) {
+			io.set('log level', config.io.log_level);
+		}
+		if(config.io.transports) {
+			io.set('transports', config.io.transports);
+		}
+	}
 });
 
 io.configure('production', function(){
 	io.set('log level', 1);
 	//io.set('transports', ['xhr-polling']);
 	//io.set('transports', ['websocket', 'htmlfile', 'xhr-polling']);
+	
+	if(config.io) {
+		if(config.io.log_level) {
+			io.set('log level', config.io.log_level);
+		}
+		if(config.io.transports) {
+			io.set('transports', config.io.transports);
+		}
+	}
 });
 
 /* Connection IO Event */
