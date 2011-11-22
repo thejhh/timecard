@@ -125,6 +125,7 @@ var TIMECARD = {};
 	/* */
 	function create_button(name, onclick) {
 		var e = document.createElement("button");
+		e.className = 'btn';
 		e.appendChild( document.createTextNode(''+name) );
 		e.onclick = initfn(onclick);
 		return e;

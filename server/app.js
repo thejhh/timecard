@@ -20,6 +20,7 @@ var app = module.exports = require('http').createServer(function (req, res) {
 	//if(serve_file('socket.io/socket.io.js', 'text/javascript', 'node_modules/socket.io/node_modules/socket.io-client/dist/socket.io.min.js')) return;
 	if(serve_file('client.html', 'text/html')) return;
 	if(serve_file('client.css', 'text/css')) return;
+	if(serve_file('bootstrap.min.css', 'text/css')) return;
 	if(serve_file('client.js', 'text/javascript')) return;
 	if(serve_file('', 'text/html', 'client.html')) return;
 	
