@@ -5,10 +5,12 @@
 
 // Setup HTTP
 var app = require('./app.js'),
-    io = require('./io.js');
+    io = require('./io.js'),
+    config = require('./config.js'),
+    http_port = config.port || 3000;
 
-app.listen(3000);
-console.log('Server running at port 3000');
+app.listen(http_port);
+console.log('Server running at port ' + http_port);
 
 process.stdin.resume();
 process.stdin.destroySoon();
