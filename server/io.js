@@ -57,8 +57,12 @@ io.sockets.on('connection', function(socket) {
 		fn = initfn(fn);
 		
 		function prepare_reply(d) {
+			
+			function get_date(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+			
 			var reply = {'projects':[],'times':[],'dates':[]},
-			    dates = {};
+			    dates = {},
+			    now = new Date();
 			foreach(d.projects).each(function(o) {
 				reply.projects.push({'id':o.id,'name':o.name});
 			});
@@ -72,10 +76,7 @@ io.sockets.on('connection', function(socket) {
 			
 			/* Include timepairs from last 24 hours */
 			foreach(d.times).each(function(o) {
-				var now = new Date(),
-				    date = o.started.getFullYear() + '-' + (o.started.getMonth()+1) + '-' + o.started.getDate();
-				
-				function get_date(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+				var date = o.started.getFullYear() + '-' + (o.started.getMonth()+1) + '-' + o.started.getDate();
 				
 				if(!dates[date]) {
 					dates[date] = {'date':get_date(o.started),'hours':o.getHours()};
@@ -85,11 +86,10 @@ io.sockets.on('connection', function(socket) {
 				
 				if(get_date(o.started).getTime() === get_date(now).getTime() ) {
 					dates[date].folded = false;
-					
 					reply.times.push({
 						'id':o.id,
 						'started': o.started.getTime(),
-						'stopped': o.stopped.getTime(),
+						'stopped': o.stopped ? o.stopped.getTime() : undefined,
 						'project': {'id':o.project.id,'name':o.project.name} });
 				} else {
 					dates[date].folded = true;
@@ -98,7 +98,7 @@ io.sockets.on('connection', function(socket) {
 			
 			/* Include list of days in the database */
 			foreach(dates).each(function(o, str) {
-				reply.dates.push({'date':o.date.getTime(),'hours':o.hours});
+				reply.dates.push({'date':o.date.getTime(),'hours':o.hours,'folded':o.folded});
 			});
 			
 			return reply;
@@ -122,6 +122,28 @@ io.sockets.on('connection', function(socket) {
 			// Load modules
 			//http_post_mod.init(d);
 			
+			/* New timepairs */
+			_loaded.data.on('new:TimePair', function(o) {
+				io.sockets.emit('timepair:add', {
+					'id':o.id,
+					'started':o.started.getTime(),
+					'stopped':o.stopped ? o.stopped.getTime() : undefined,
+					'project':{
+						'id':o.project.id,
+						'name':o.project.name } });
+			});
+			
+			_loaded.data.on('update:TimePair', function(o) {
+				console.log('Emitting timepair:update...');
+				io.sockets.emit('timepair:update', {
+					'id':o.id,
+					'started':o.started.getTime(),
+					'stopped':o.stopped ? o.stopped.getTime() : undefined,
+					'project':{
+						'id':o.project.id,
+						'name':o.project.name } });
+			});
+
 			fn(undefined, prepare_reply(_loaded.data) );
 		});
 	});

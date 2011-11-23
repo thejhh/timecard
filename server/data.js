@@ -32,7 +32,9 @@ function TimePair(args) {
 		next_id += 1;
 	}
 	this.started = utils.to_date(args.started);
-	this.stopped = utils.to_date(args.stopped);
+	if(args.stopped) {
+		this.stopped = utils.to_date(args.stopped);
+	}
 	if(args.project && (args.project instanceof Project) ) {
 		this.project = args.project;
 	}
@@ -44,8 +46,9 @@ function TimePair(args) {
 /* */
 TimePair.prototype.getHours = function() {
 	var self = this,
+	    now = new Date(),
 		started = self.started.getTime(),
-		stopped = self.stopped.getTime();
+		stopped = self.stopped ? self.stopped.getTime() : now.getTime();
 	return (stopped - started)/1000/3600;
 };
 
@@ -143,8 +146,31 @@ function load_file(data_filename, load_fn) {
 		};
 		
 		// Handle stop events
-		obj.on('stop', function(buf) {
-			obj.times.push( new TimePair({'started':buf.started, 'stopped':buf.stopped, 'project':buf.project}) );
+		obj.on('start', function(countdown) {
+			var time = new TimePair({'started':countdown.started, 'project':countdown.project});
+			obj.times.push(time);
+			countdown.time = time;
+			obj.changed(true);
+			obj.emit('new:TimePair', time);
+		});
+		
+		// Handle stop events
+		obj.on('stop', function(countdown) {
+			console.log('Stop event');
+			var time;
+			if(countdown.time) {
+				console.log('Original time');
+				time = countdown.time;
+				time.stopped = utils.to_date(countdown.stopped);
+				obj.changed(true);
+				obj.emit('update:TimePair', time);
+			} else {
+				console.log('New time');
+				time = new TimePair({'started':countdown.started, 'stopped':countdown.stopped, 'project':countdown.project});
+				obj.times.push(time);
+				obj.changed(true);
+				obj.emit('new:TimePair', time);
+			}
 		});
 		
 		// Stop countdown
@@ -189,7 +215,7 @@ function load_file(data_filename, load_fn) {
 				buf.times.push( {
 					'id':utils.to_int(o.id),
 					'started':utils.to_int(o.started.getTime()), 
-					'stopped':utils.to_int(o.stopped.getTime()),
+					'stopped':o.stopped ? utils.to_int(o.stopped.getTime()) : undefined,
 					'project':{
 						'id':utils.to_int(o.project.id),
 						'name':''+o.project.name }} );
