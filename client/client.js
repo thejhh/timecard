@@ -4,37 +4,92 @@ var TIMECARD = {};
 /* Our local namespace scope */
 (function() {
 	
+	/* Dynamic document manipulations */
+	function require_html() {
+		var html = {};
+		html.$ = function(id) {
+			return document.getElementById(id);
+		};
+		
+		html.text = function(str) {
+			return document.createTextNode(''+str);
+		};
+		
+		html.element = function(tag) {
+			return document.createElement(''+tag);
+		};
+		
+		html.table = function(headers, id) {
+			var headers = headers || [],
+			    table = html.element('table'),
+			    caption = table.createCaption(),
+			    thead = table.createTHead(),
+			    tbody = table.appendChild(html.element('tbody')),
+			    tr = thead.insertRow(),
+			    i;
+			if(id) table.id = id;
+			table.className = 'zebra-striped bordered-table';
+			for(i=0; i< headers.length; i=i+1) {
+				tr.insertCell(-1).appendChild(headers[i]);
+			}
+			return table;
+		};
+		
+		/* */
+		html.button = function(name, onclick) {
+			var e = html.element("button");
+			e.className = 'btn';
+			e.appendChild( html.text(''+name) );
+			e.onclick = utils.initfn(onclick);
+			return e;
+		};
+		
+		return html;
+	}
+	
+	/* Utils */
+	function require_utils() {
+		var utils = {};
+		
+		/* To int */
+		utils.to_int = function(n) {
+			if(typeof n === 'number') {
+				return n;
+			}
+			return parseInt(n, 10);
+		};
+		
+		/* To date */
+		utils.to_date = function(d) {
+			if(d && (d instanceof Date)) {
+				return d;
+			}
+			var ret = new Date();
+			ret.setTime(utils.to_int(d));
+			return ret;
+		};
+		
+		/* Prepare callback */
+		utils.initfn = function(fn) {
+			function noop(){};
+			return (fn && (typeof fn === 'function')) ? fn : noop;
+		};
+		
+		/* Trim */
+		utils.trim = function(value) {
+			return (value || '').replace(/^ +/, '').replace(/ +$/, '');
+		};
+		
+		return utils;
+	}
+	
+	var html = require_html(),
+	    utils = require_utils();
+	
 	var elements = {'TimePair': {}, 'Project': {}};
 	
 	var timecard = TIMECARD;
-	timecard.data = {'projects': [], 'log':[], 'times':[]};
-	
-	var utils = {};
-	
-	/* To int */
-	utils.to_int = function(n) {
-		if(typeof n === 'number') {
-			return n;
-		}
-		return parseInt(n, 10);
-	};
-	
-	/* To date */
-	utils.to_date = function(d) {
-		if(d && (d instanceof Date)) {
-			return d;
-		}
-		var ret = new Date();
-		ret.setTime(utils.to_int(d));
-		return ret;
-	};
-
-	
-	/* Prepare callback */
-	function initfn(fn) {
-		function noop(){};
-		return (fn && (typeof fn === 'function')) ? fn : noop;
-	}
+	timecard.data = {'projects': [], 'log':[], 'times':[], 'dates':[]};
 	
 	/* */
 	function get_project_by_id(id) {
@@ -81,7 +136,7 @@ var TIMECARD = {};
 	
 	/* Add project to server */
 	Socket.prototype.addProject = function(name, fn) {
-		fn = initfn(fn);
+		fn = utils.initfn(fn);
 		var socket = this;
 		socket.io.emit('client:project:add', name, function(err) {
 			fn(err);
@@ -90,7 +145,7 @@ var TIMECARD = {};
 	
 	/* Start project */
 	Socket.prototype.start = function(project, fn) {
-		fn = initfn(fn);
+		fn = utils.initfn(fn);
 		var socket = this;
 		socket.io.emit('client:project:start', project.id, function(err) {
 			fn(err);
@@ -99,17 +154,16 @@ var TIMECARD = {};
 	
 	/* Stop (any running) project */
 	Socket.prototype.stop = function(fn) {
-		fn = initfn(fn);
+		fn = utils.initfn(fn);
 		var socket = this;
 		socket.io.emit('client:project:stop', function(err) {
 			fn(err);
 		});
 	};
 	
-	
 	/* Initialize socket */
 	Socket.prototype.init = function(fn) {
-		fn = initfn(fn);
+		fn = utils.initfn(fn);
 		var socket = this;
 		socket.io.emit('client:init', function(err, data) {
 			fn(err, data);
@@ -117,18 +171,17 @@ var TIMECARD = {};
 	};
 	
 	
-	/* Trim */
-	function trim(value) {
-		return (value || '').replace(/^ +/, '').replace(/ +$/, '');
-	}
-	
 	/* */
-	function create_button(name, onclick) {
-		var e = document.createElement("button");
-		e.className = 'btn';
-		e.appendChild( document.createTextNode(''+name) );
-		e.onclick = initfn(onclick);
-		return e;
+	function create_times_date_element(d) {
+		var parent_div = html.$('times_div'),
+			table_id = 'table_date_' + d.date.getFullYear() + '_' + d.date.getMonth() + '_' + d.date.getDate(),
+		    parent_table = html.$(table_id) || html.table([html.text('Start'), html.text('End'), html.text('Project'), html.text('Time')], table_id),
+		    caption = parent_table.createCaption(),
+		    tbody = parent_table.tBodies[0],
+		    tr = tbody.insertRow(-1);
+		caption.appendChild(html.text(format.date(d.date) + ' (total ' + format.hours(d.hours) + ')'));
+		parent_div.appendChild(parent_table);
+		return parent_table;
 	}
 	
 	/* */
@@ -140,27 +193,24 @@ var TIMECARD = {};
 		function get_hour(d) {
 			return f(d.getHours()) + ':' + f(d.getMinutes());
 		}
-		function get_time(hours) {
-			var h = Math.floor(hours),
-			    m = Math.round((hours-h)*60);
-			return f(h) + ':' + f(m);
-		}
-		var parent_div = document.getElementById('times_div'),
-		    parent_table = parent_div.firstChild,
-		    tr = parent_table.insertRow(-1),
-			date, start, end, project, time;
+		var parent_div = html.$('times_div'),
+			table_id = 'table_date_' + timepair.started.getFullYear() + '_' + timepair.started.getMonth() + '_' + timepair.started.getDate(),
+		    parent_table = html.$(table_id) || html.table([html.text('Start'), html.text('End'), html.text('Project'), html.text('Time')], table_id),
+		    tbody = parent_table.tBodies[0],
+		    tr = tbody.insertRow(-1),
+			start, end, project, time;
 		
-		date = tr.insertCell(-1);
+		parent_div.appendChild(parent_table);
+		
 		start = tr.insertCell(-1);
 		end = tr.insertCell(-1);
 		project = tr.insertCell(-1);
 		time = tr.insertCell(-1);
 		
-		date.appendChild( document.createTextNode(get_date(timepair.started)) );
-		start.appendChild( document.createTextNode(get_hour(timepair.started)) );
-		end.appendChild( document.createTextNode(get_hour(timepair.stopped)) );
-		project.appendChild( document.createTextNode(''+timepair.project.name) );
-		time.appendChild( document.createTextNode(''+get_time(timepair.getHours())) );
+		start.appendChild( html.text(get_hour(timepair.started)) );
+		end.appendChild( html.text(get_hour(timepair.stopped)) );
+		project.appendChild( html.text(''+timepair.project.name) );
+		time.appendChild( html.text(''+format.hours(timepair.getHours())) );
 		
 		return tr;
 	}
@@ -169,10 +219,10 @@ var TIMECARD = {};
 	function Project(args) {
 		args = args || {};
 		var m = this,
-		    div = document.getElementById('projects_div');
+		    div = html.$('projects_div');
 		m.id = args.id;
 		m.name = args.name || '';
-		m.button = create_button(m.name, function() { timecard.start(m); });
+		m.button = html.button(m.name, function() { timecard.start(m); });
 		div.appendChild(m.button);
 	}
 	
@@ -201,6 +251,15 @@ var TIMECARD = {};
 		// Update element data?
 	}
 	
+	/* Create date object for timecards */
+	function TimecardDate(args) {
+		args = args || {};
+		var self = this;
+		self.date = utils.to_date(args.date);
+		self.hours = args.hours; // FIXME: parse utils.to_float?
+		self.element = create_times_date_element(self);
+	}
+	
 	/* */
 	TimePair.prototype.getHours = function() {
 		var self = this,
@@ -209,20 +268,42 @@ var TIMECARD = {};
 		return (stopped - started)/1000/3600;
 	};
 	
-	/* Format time */
-	function format_time(d) {
-		function f(n) { return (n <= 9) ? '0'+n : n; }
-		return f(d.getDate()) + '.' + f(d.getMonth()+1) + '.' + d.getFullYear() + ' ' + f(d.getHours()) + ':' + f(d.getMinutes());
+	function require_format() {
+		var format = {};
+		
+		function f(n) { return (n <= 9) ? '0'+n : ''+n; }
+		
+		/* Format time */
+		format.date = function(d) {
+			function f(n) { return (n <= 9) ? '0'+n : n; }
+			return f(d.getDate()) + '.' + f(d.getMonth()+1) + '.' + d.getFullYear();
+		};
+		
+		/* Format time */
+		format.time = function(d) {
+			function f(n) { return (n <= 9) ? '0'+n : n; }
+			return f(d.getDate()) + '.' + f(d.getMonth()+1) + '.' + d.getFullYear() + ' ' + f(d.getHours()) + ':' + f(d.getMinutes());
+		};
+		
+		format.hours = function(hours) {
+			var h = Math.floor(hours),
+			    m = Math.round((hours-h)*60);
+			return f(h) + ':' + f(m);
+		};
+		
+		return format;
 	}
+	
+	var format = require_format();
 	
 	/* Setup status line */
 	function set_status(msg, classname) {
-		var div = document.getElementById('status_div'),
-		    span = document.createElement('span');
+		var div = html.$('status_div'),
+		    span = html.element('span');
 		if(classname) {
 			span.className = ''+classname;
 		}
-		span.appendChild( document.createTextNode(''+msg) );
+		span.appendChild( html.text(msg) );
 		
 		while(div.hasChildNodes()) {
 			div.removeChild(div.firstChild);
@@ -232,22 +313,22 @@ var TIMECARD = {};
 	
 	/* Enable or disable stop button */
 	function disable_stop_button(value) {
-		document.getElementById('stop_button').disabled = value ? true : false;
+		html.$('stop_button').disabled = value ? true : false;
 	}
 	
 	/* Write log message */
 	function write_log(msg, date) {
 		var now = date || new Date(),
-		    log_div = document.getElementById('log_div'),
-		    p = document.createElement("p");
-		p.appendChild( document.createTextNode( format_time(now) + ' - ' + msg ) );
+		    log_div = html.$('log_div'),
+		    p = html.element("p");
+		p.appendChild( html.text( format.time(now) + ' - ' + msg ) );
 		log_div.appendChild(p);
 	}
 	
 	/* Add new project */
 	timecard.addProject = function(form) {
 		set_status('Adding project...');
-		var name = trim(form.elements[0].value);
+		var name = utils.trim(form.elements[0].value);
 		
 		if(name.length === 0) {
 			set_status('Project name missing', 'error');
@@ -310,6 +391,13 @@ var TIMECARD = {};
 				project.button.disabled = true;
 			} else {
 				disable_stop_button(true);
+			}
+			
+			if(data.dates && (data.dates.length != 0)) {
+				table = data.dates;
+				for(i=0; i<table.length; i+=1) {
+					timecard.data.dates.push( new TimecardDate(table[i]) );
+				}
 			}
 			
 			if(data.times && (data.times.length != 0)) {

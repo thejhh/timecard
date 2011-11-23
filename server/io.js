@@ -57,7 +57,8 @@ io.sockets.on('connection', function(socket) {
 		fn = initfn(fn);
 		
 		function prepare_reply(d) {
-			var reply = {'projects':[],'times':[]};
+			var reply = {'projects':[],'times':[],'dates':[]},
+			    dates = {};
 			foreach(d.projects).each(function(o) {
 				reply.projects.push({'id':o.id,'name':o.name});
 			});
@@ -68,13 +69,38 @@ io.sockets.on('connection', function(socket) {
 						'id':d.countdown.project.id,
 						'name':d.countdown.project.name }};
 			}
+			
+			/* Include timepairs from last 24 hours */
 			foreach(d.times).each(function(o) {
-				reply.times.push({
-					'id':o.id,
-					'started': o.started.getTime(),
-					'stopped': o.stopped.getTime(),
-					'project': {'id':o.project.id,'name':o.project.name} });
+				var now = new Date(),
+				    date = o.started.getFullYear() + '-' + (o.started.getMonth()+1) + '-' + o.started.getDate();
+				
+				function get_date(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+				
+				if(!dates[date]) {
+					dates[date] = {'date':get_date(o.started),'hours':o.getHours()};
+				} else {
+					dates[date].hours += o.getHours();
+				}
+				
+				if(get_date(o.started).getTime() === get_date(now).getTime() ) {
+					dates[date].folded = false;
+					
+					reply.times.push({
+						'id':o.id,
+						'started': o.started.getTime(),
+						'stopped': o.stopped.getTime(),
+						'project': {'id':o.project.id,'name':o.project.name} });
+				} else {
+					dates[date].folded = true;
+				}
 			});
+			
+			/* Include list of days in the database */
+			foreach(dates).each(function(o, str) {
+				reply.dates.push({'date':o.date.getTime(),'hours':o.hours});
+			});
+			
 			return reply;
 		}
 		
@@ -201,7 +227,6 @@ io.sockets.on('connection', function(socket) {
 			});
 		});
 	});
-	
 	
 });
 

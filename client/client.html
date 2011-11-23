@@ -8,80 +8,110 @@
  <script src="/socket.io/socket.io.js"></script>
  <script type="text/javascript" src="client.js"></script>
 </head>
-<body>
-
+<body style="padding-top:40px">
 <div class="container">
-		<div class="alert-message">
-			<b>Status:</b> 
-			<span id="status_div"><noscript><span class="error">Please turn on your JavaScript.</span></noscript></div>
-		</div>
-</div>
 
-<div class="row">
-
-	<div class="span8" id="add_project_div">
-		<fieldset>
-			<legend>Add New Project</legend>
-			 <form onsubmit="TIMECARD.addProject(this);return false">
-			 <div class="clearfix">
-				<label for="name">Name</label>
-				<div class="input">
-					<input type="text" id="name" name="name" value="" />
+	<div class="topbar-wrapper">
+		<div class="topbar" data-dropdown="dropdown">
+			<div class="topbar-inner">
+				<div class="container">
+					<h3><a href="#">Timecard</a></h3>
+					<ul class="nav">
+						<li class="active"><a href="#">Home</a></li>
+					</ul>
 				</div>
-			 </div>
-			 <div class="actions">
-				<input type="submit" class="btn primary" name="add_project" value="Save changes">
-			 </div>
-			 </form>
-		</fieldset>
-	</div>
-
-	<div class="span8">
-		<p><b>Start projects:</b>
-
-		<span id="projects_div"></span><br />
-
-		<b>Current project:</b>
-
-		<span id="tools_div">
-		<button class="btn" id="stop_button" type="button" disabled="disabled" onclick="TIMECARD.stop();return false">Stop</button>
-		</span><br />
-		</p>
-	</div>
-
-</div>
-
-<hr />
-
-<div id="times_div"><table class="zebra-striped bordered-table">
- <tr>
-  <th>Date</th>
-  <th>Start</th>
-  <th>End</th>
-  <th>Project</th>
-  <th>Time</th>
- </tr>
- </table></div>
-
-<hr />
-
-<h3>Log Messages</h3>
-
-<div id="log_div">
-</div>
-
-<hr />
-
-<p>&copy; 2011 Jaakko-Heikki Heusala &lt;jheusala@iki.fi&gt;</p>
-
-<p><span class="label notice">Notice</span>
-This is just a small demo for concept testing purposes. Source code is AGPL 
-licenced.</p>
-
-<a href="http://github.com/jheusala/timecard"><img style="position: absolute; top: 0; right: 
-0; border: 0;" 
+			</div>
+	<div style="position:absolute;top:0;right:0;border:0;zindex:5"><a href="http://github.com/jheusala/timecard"><img
 src="https://a248.e.akamai.net/assets.github.com/img/abad93f42020b733148435e2cd92ce15c542d320/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67" 
-alt="Fork me on GitHub"></a>
+alt="Fork me on GitHub"></a></div>
+
+		</div>
+	</div>
+
+ 	<hr />
+	
+	<div class="row">
+		<div class="span16">
+			<span class="label notice">Notice</span>
+			This is just a small demo for concept testing purposes. Source code is AGPL 
+			licenced.
+		</div>
+	</div>
+	
+ 	<hr />
+	
+	<div class="row">
+
+		<div class="span8" id="add_project_div">
+			<fieldset>
+				<legend>Add New Project</legend>
+				 <form onsubmit="TIMECARD.addProject(this);return false">
+				 <div class="clearfix">
+					<label for="name">Name</label>
+					<div class="input">
+						<input type="text" id="name" name="name" value="" />
+					</div>
+				 </div>
+				 <div class="actions">
+					<input type="submit" class="btn primary" name="add_project" value="Save changes">
+				 </div>
+				 </form>
+			</fieldset>
+		</div>
+
+		<div class="span8">
+			<div class="row">
+				<div class="span2">
+					<b>Start projects:</b>
+				</div>
+				<div class="span6">
+					<span id="projects_div"></span>
+				</div>
+			</div>
+			
+			<hr />
+			
+			<div class="row">
+				<div class="span2">
+					<b>Current project:</b>
+				</div>
+				<div class="span6">
+					<span id="tools_div">
+					<button class="btn" id="stop_button" type="button" disabled="disabled" onclick="TIMECARD.stop();return false">Stop</button>
+					</span><br />
+				</div>
+			</div>
+		</div>
+	
+	</div>
+
+	<hr />
+	
+	<div class="alert-message">
+		<b>Status:</b> 
+		<span id="status_div"><noscript><span class="error">Please turn on your JavaScript.</span></noscript></span>
+	</div>
+	
+	<hr />
+
+	<div id="times_div"></div>
+	
+	<hr />
+
+	<h3>Log Messages</h3>
+
+	<div id="log_div">
+	</div>
+
+	<hr />
+
+	<div class="row">
+		<div class="span10">
+		</div>
+		<div class="span6">
+			&copy; 2011 Jaakko-Heikki Heusala &lt;jheusala@iki.fi&gt;
+		</div>
+	</div>
 
 </div>
 </body>

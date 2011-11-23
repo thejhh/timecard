@@ -41,6 +41,14 @@ function TimePair(args) {
 	}
 }
 
+/* */
+TimePair.prototype.getHours = function() {
+	var self = this,
+		started = self.started.getTime(),
+		stopped = self.stopped.getTime();
+	return (stopped - started)/1000/3600;
+};
+
 /* Load file */
 function load_file(data_filename, load_fn) {
 	load_fn = initfn(load_fn);
